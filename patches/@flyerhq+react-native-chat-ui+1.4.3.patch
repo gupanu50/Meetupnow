@@ -1,0 +1,172 @@
+diff --git a/node_modules/@flyerhq/react-native-chat-ui/.DS_Store b/node_modules/@flyerhq/react-native-chat-ui/.DS_Store
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/@flyerhq/react-native-chat-ui/lib/.DS_Store b/node_modules/@flyerhq/react-native-chat-ui/lib/.DS_Store
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/@flyerhq/react-native-chat-ui/lib/components/AttachmentButton/AttachmentButton.js b/node_modules/@flyerhq/react-native-chat-ui/lib/components/AttachmentButton/AttachmentButton.js
+index 77f49e5..bb60cd7 100644
+--- a/node_modules/@flyerhq/react-native-chat-ui/lib/components/AttachmentButton/AttachmentButton.js
++++ b/node_modules/@flyerhq/react-native-chat-ui/lib/components/AttachmentButton/AttachmentButton.js
+@@ -1,7 +1,8 @@
+ import * as React from 'react';
+ import { Image, StyleSheet, TouchableOpacity, } from 'react-native';
+ import { L10nContext, ThemeContext } from '../../utils';
+-export const AttachmentButton = ({ onPress, touchableOpacityProps, }) => {
++export const AttachmentButton = ({ onPress, touchableOpacityProps,chatStatus }) => {
++    console.log('statusfile', chatStatus)
+     var _a, _b, _c;
+     const l10n = React.useContext(L10nContext);
+     const theme = React.useContext(ThemeContext);
+@@ -10,7 +11,7 @@ export const AttachmentButton = ({ onPress, touchableOpacityProps, }) => {
+         onPress === null || onPress === void 0 ? void 0 : onPress();
+         (_a = touchableOpacityProps === null || touchableOpacityProps === void 0 ? void 0 : touchableOpacityProps.onPress) === null || _a === void 0 ? void 0 : _a.call(touchableOpacityProps, event);
+     };
+-    return (React.createElement(TouchableOpacity, { accessibilityLabel: l10n.attachmentButtonAccessibilityLabel, accessibilityRole: 'button', ...touchableOpacityProps, onPress: handlePress }, (_c = (_b = (_a = theme.icons) === null || _a === void 0 ? void 0 : _a.attachmentButtonIcon) === null || _b === void 0 ? void 0 : _b.call(_a)) !== null && _c !== void 0 ? _c : (React.createElement(Image, { source: require('../../assets/icon-attachment.png'), style: [styles.image, { tintColor: theme.colors.inputText }] }))));
++    return (React.createElement(TouchableOpacity, { accessibilityLabel: l10n.attachmentButtonAccessibilityLabel,disabled:chatStatus===1? false: true, accessibilityRole: 'button', ...touchableOpacityProps, onPress: handlePress }, (_c = (_b = (_a = theme.icons) === null || _a === void 0 ? void 0 : _a.attachmentButtonIcon) === null || _b === void 0 ? void 0 : _b.call(_a)) !== null && _c !== void 0 ? _c : (React.createElement(Image, { source: require('../../assets/icon-attachment.png'), style: [styles.image, { tintColor: 'black' }] }))));
+ };
+ const styles = StyleSheet.create({
+     image: {
+diff --git a/node_modules/@flyerhq/react-native-chat-ui/lib/components/Chat/Chat.js b/node_modules/@flyerhq/react-native-chat-ui/lib/components/Chat/Chat.js
+index 3fe8d2f..0ca66a4 100644
+--- a/node_modules/@flyerhq/react-native-chat-ui/lib/components/Chat/Chat.js
++++ b/node_modules/@flyerhq/react-native-chat-ui/lib/components/Chat/Chat.js
+@@ -22,7 +22,7 @@ const animate = () => {
+ // eslint-disable-next-line jest/require-hook
+ dayjs.extend(calendar);
+ /** Entry component, represents the complete chat */
+-export const Chat = ({ customBottomComponent, customDateHeaderText, dateFormat, disableImageGallery, emptyState, enableAnimation, flatListProps, inputProps, isAttachmentUploading, isLastPage, l10nOverride, locale = 'en', messages, onAttachmentPress, onEndReached, onMessageLongPress, onMessagePress, onPreviewDataFetched, onSendPress, renderBubble, renderCustomMessage, renderFileMessage, renderImageMessage, renderTextMessage, sendButtonVisibilityMode = 'editing', showUserAvatars = false, showUserNames = false, textInputProps, theme = defaultTheme, timeFormat, usePreviewData = true, user, }) => {
++export const Chat = ({ customBottomComponent, customDateHeaderText, dateFormat, disableImageGallery, emptyState, enableAnimation, flatListProps, inputProps, isAttachmentUploading, isLastPage, l10nOverride, locale = 'en', messages, onAttachmentPress, onEndReached, onMessageLongPress, onMessagePress, onPreviewDataFetched, onSendPress, renderBubble, renderCustomMessage, renderFileMessage, renderImageMessage, renderTextMessage, sendButtonVisibilityMode = 'editing', showUserAvatars = false, showUserNames = false, textInputProps, theme = defaultTheme, timeFormat, usePreviewData = true, user,chatStatus }) => {
+     const { container, emptyComponentContainer, emptyComponentTitle, flatList, flatListContentContainer, footer, footerLoadingPage, header, keyboardAccessoryView, } = styles({ theme });
+     const { onLayout, size } = useComponentSize();
+     const animationRef = React.useRef(false);
+@@ -197,6 +197,7 @@ export const Chat = ({ customBottomComponent, customDateHeaderText, dateFormat,
+                                 renderScrollable,
+                                 sendButtonVisibilityMode,
+                                 textInputProps,
++                                chatStatus
+                             } }))),
+                     React.createElement(ImageView, { imageIndex: imageViewIndex, images: gallery, onRequestClose: handleRequestClose, visible: isImageViewVisible }))))));
+ };
+diff --git a/node_modules/@flyerhq/react-native-chat-ui/lib/components/Chat/styles.js b/node_modules/@flyerhq/react-native-chat-ui/lib/components/Chat/styles.js
+index e92440d..a5fd718 100644
+--- a/node_modules/@flyerhq/react-native-chat-ui/lib/components/Chat/styles.js
++++ b/node_modules/@flyerhq/react-native-chat-ui/lib/components/Chat/styles.js
+@@ -1,8 +1,11 @@
+ import { StyleSheet } from 'react-native';
+ export default ({ theme }) => StyleSheet.create({
+     container: {
+-        backgroundColor: theme.colors.background,
++        // backgroundColor: 'white',
+         flex: 1,
++
++        borderBottomLeftRadius:20,
++        borderBottomRightRadius:20
+     },
+     emptyComponentContainer: {
+         alignItems: 'center',
+@@ -11,6 +14,7 @@ export default ({ theme }) => StyleSheet.create({
+     },
+     emptyComponentTitle: {
+         ...theme.fonts.emptyChatPlaceholderTextStyle,
++        color:'white',
+         textAlign: 'center',
+     },
+     flatList: {
+@@ -19,6 +23,7 @@ export default ({ theme }) => StyleSheet.create({
+     },
+     flatListContentContainer: {
+         flexGrow: 1,
++
+     },
+     footer: {
+         height: 16,
+@@ -33,9 +38,13 @@ export default ({ theme }) => StyleSheet.create({
+         height: 4,
+     },
+     keyboardAccessoryView: {
+-        backgroundColor: theme.colors.inputBackground,
++        backgroundColor: 'white',
+         borderTopLeftRadius: theme.borders.inputBorderRadius,
+         borderTopRightRadius: theme.borders.inputBorderRadius,
++
++        marginBottom:10,
++        borderBottomLeftRadius:20,
++        borderBottomRightRadius:20
+     },
+ });
+ //# sourceMappingURL=styles.js.map
+\ No newline at end of file
+diff --git a/node_modules/@flyerhq/react-native-chat-ui/lib/components/Input/Input.js b/node_modules/@flyerhq/react-native-chat-ui/lib/components/Input/Input.js
+index 6da122e..9d040ad 100644
+--- a/node_modules/@flyerhq/react-native-chat-ui/lib/components/Input/Input.js
++++ b/node_modules/@flyerhq/react-native-chat-ui/lib/components/Input/Input.js
+@@ -7,7 +7,7 @@ import { SendButton } from '../SendButton';
+ import styles from './styles';
+ /** Bottom bar input component with a text input, attachment and
+  * send buttons inside. By default hides send button when text input is empty. */
+-export const Input = ({ attachmentButtonProps, attachmentCircularActivityIndicatorProps, isAttachmentUploading, onAttachmentPress, onSendPress, sendButtonVisibilityMode, textInputProps, }) => {
++export const Input = ({ attachmentButtonProps, attachmentCircularActivityIndicatorProps, isAttachmentUploading, onAttachmentPress, onSendPress, sendButtonVisibilityMode, textInputProps,chatStatus }) => {
+     var _a, _b;
+     const l10n = React.useContext(L10nContext);
+     const theme = React.useContext(ThemeContext);
+@@ -38,8 +38,8 @@ export const Input = ({ attachmentButtonProps, attachmentCircularActivityIndicat
+                     ...attachmentCircularActivityIndicatorProps,
+                     color: theme.colors.inputText,
+                     style: marginRight,
+-                } })) : (!!onAttachmentPress && (React.createElement(AttachmentButton, { ...unwrap(attachmentButtonProps), onPress: onAttachmentPress })))),
+-        React.createElement(TextInput, { multiline: true, placeholder: l10n.inputPlaceholder, placeholderTextColor: `${String(theme.colors.inputText)}80`, underlineColorAndroid: 'transparent', ...textInputProps, 
++                } })) : (!!onAttachmentPress && (React.createElement(AttachmentButton, { ...unwrap(attachmentButtonProps),chatStatus, onPress: onAttachmentPress })))),
++        React.createElement(TextInput, { multiline: true, placeholder: l10n.inputPlaceholder, placeholderTextColor: 'grey', underlineColorAndroid: 'transparent',editable:chatStatus === 1? true: false, ...textInputProps, 
+             // Keep our implementation but allow user to use these `TextInputProps`
+             style: [input, textInputProps === null || textInputProps === void 0 ? void 0 : textInputProps.style], onChangeText: handleChangeText, value: value }),
+         sendButtonVisibilityMode === 'always' ||
+diff --git a/node_modules/@flyerhq/react-native-chat-ui/lib/components/Input/styles.js b/node_modules/@flyerhq/react-native-chat-ui/lib/components/Input/styles.js
+index d5973bb..ff6c211 100644
+--- a/node_modules/@flyerhq/react-native-chat-ui/lib/components/Input/styles.js
++++ b/node_modules/@flyerhq/react-native-chat-ui/lib/components/Input/styles.js
+@@ -4,11 +4,16 @@ export default ({ theme }) => StyleSheet.create({
+         alignItems: 'center',
+         flexDirection: 'row',
+         paddingHorizontal: 24,
+-        paddingVertical: 20,
++        paddingVertical: 14,
++
++        borderWidth:1,
++        borderRadius:30,
++        marginHorizontal:20,
++        backgroundColor:'white'
+     },
+     input: {
+         ...theme.fonts.inputTextStyle,
+-        color: theme.colors.inputText,
++        color: 'black',
+         flex: 1,
+         maxHeight: 100,
+         // Fixes default paddings for Android
+diff --git a/node_modules/@flyerhq/react-native-chat-ui/lib/components/SendButton/SendButton.js b/node_modules/@flyerhq/react-native-chat-ui/lib/components/SendButton/SendButton.js
+index ef25ed8..0cc3b96 100644
+--- a/node_modules/@flyerhq/react-native-chat-ui/lib/components/SendButton/SendButton.js
++++ b/node_modules/@flyerhq/react-native-chat-ui/lib/components/SendButton/SendButton.js
+@@ -10,7 +10,7 @@ export const SendButton = ({ onPress, touchableOpacityProps, }) => {
+         onPress();
+         (_a = touchableOpacityProps === null || touchableOpacityProps === void 0 ? void 0 : touchableOpacityProps.onPress) === null || _a === void 0 ? void 0 : _a.call(touchableOpacityProps, event);
+     };
+-    return (React.createElement(TouchableOpacity, { accessibilityLabel: l10n.sendButtonAccessibilityLabel, accessibilityRole: 'button', ...touchableOpacityProps, onPress: handlePress, style: styles.sendButton }, (_c = (_b = (_a = theme.icons) === null || _a === void 0 ? void 0 : _a.sendButtonIcon) === null || _b === void 0 ? void 0 : _b.call(_a)) !== null && _c !== void 0 ? _c : (React.createElement(Image, { source: require('../../assets/icon-send.png'), style: { tintColor: theme.colors.inputText } }))));
++    return (React.createElement(TouchableOpacity, { accessibilityLabel: l10n.sendButtonAccessibilityLabel, accessibilityRole: 'button', ...touchableOpacityProps, onPress: handlePress, style: styles.sendButton }, (_c = (_b = (_a = theme.icons) === null || _a === void 0 ? void 0 : _a.sendButtonIcon) === null || _b === void 0 ? void 0 : _b.call(_a)) !== null && _c !== void 0 ? _c : (React.createElement(Image, { source: require('../../assets/icon-send.png'), style: { tintColor: 'black' } }))));
+ };
+ const styles = StyleSheet.create({
+     sendButton: {
+diff --git a/node_modules/@flyerhq/react-native-chat-ui/lib/l10n.js b/node_modules/@flyerhq/react-native-chat-ui/lib/l10n.js
+index f5c1cc7..c1a5142 100644
+--- a/node_modules/@flyerhq/react-native-chat-ui/lib/l10n.js
++++ b/node_modules/@flyerhq/react-native-chat-ui/lib/l10n.js
+@@ -4,7 +4,7 @@ export const l10n = {
+         attachmentButtonAccessibilityLabel: 'Send media',
+         emptyChatPlaceholder: 'No messages here yet',
+         fileButtonAccessibilityLabel: 'File',
+-        inputPlaceholder: 'Message',
++        inputPlaceholder: 'Type message...',
+         sendButtonAccessibilityLabel: 'Send',
+     },
+     es: {

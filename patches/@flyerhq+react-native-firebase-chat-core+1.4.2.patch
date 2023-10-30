@@ -1,0 +1,185 @@
+diff --git a/node_modules/@flyerhq/react-native-firebase-chat-core/.DS_Store b/node_modules/@flyerhq/react-native-firebase-chat-core/.DS_Store
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/@flyerhq/react-native-firebase-chat-core/lib/useMessages.js b/node_modules/@flyerhq/react-native-firebase-chat-core/lib/useMessages.js
+index a73710e..2f1a77f 100644
+--- a/node_modules/@flyerhq/react-native-firebase-chat-core/lib/useMessages.js
++++ b/node_modules/@flyerhq/react-native-firebase-chat-core/lib/useMessages.js
+@@ -31,6 +31,7 @@ const useMessages = (room) => {
+     const [messages, setMessages] = React.useState([]);
+     const { firebaseUser } = (0, useFirebaseUser_1.useFirebaseUser)();
+     React.useEffect(() => {
++        // updateLast(messages);
+         return (0, firestore_1.default)()
+             .collection(`rooms/${room.id}/messages`)
+             .orderBy('createdAt', 'desc')
+@@ -55,8 +56,10 @@ const useMessages = (room) => {
+                 });
+             });
+             setMessages(newMessages);
++            // console.log('=======newMessages======>>>',newMessages);
+         });
+-    }, [room.id, room.users]);
++    }, [room.id, room.users,messages]);
++
+     /** Sends a message to the Firestore. Accepts any partial message. */
+     const sendMessage = async (message) => {
+         if (!firebaseUser)
+@@ -69,6 +72,17 @@ const useMessages = (room) => {
+             createdAt: firestore_1.default.FieldValue.serverTimestamp(),
+             updatedAt: firestore_1.default.FieldValue.serverTimestamp(),
+         });
++        // const updateLastMessage = async () => {
++            await (0, firestore_1.default)()
++                .collection(`rooms`)
++                .doc(room.id)
++                .update({
++                    lastMessage: message,
++                    lastMessageTime:firestore_1.default.FieldValue.serverTimestamp(),
++                    count:firestore_1.default.FieldValue.increment(1),
++                    sender:firebaseUser?.uid
++                });
++        // };
+     };
+     /** Updates a message in the Firestore. Accepts any message.
+      * Message will probably be taken from the `useMessages` stream. */
+@@ -89,6 +103,13 @@ const useMessages = (room) => {
+             authorId: message.author.id,
+             updatedAt: firestore_1.default.FieldValue.serverTimestamp(),
+         });
++        await (0, firestore_1.default)()
++                .collection(`rooms`)
++                .doc(room.id)
++                .update({
++                    lastMessage: message,
++                    lastMessageTime:firestore_1.default.FieldValue.serverTimestamp()
++                });
+     };
+     return { messages, sendMessage, updateMessage };
+ };
+diff --git a/node_modules/@flyerhq/react-native-firebase-chat-core/lib/useRooms.js b/node_modules/@flyerhq/react-native-firebase-chat-core/lib/useRooms.js
+index a1fc5a3..41c1dd6 100644
+--- a/node_modules/@flyerhq/react-native-firebase-chat-core/lib/useRooms.js
++++ b/node_modules/@flyerhq/react-native-firebase-chat-core/lib/useRooms.js
+@@ -56,6 +56,7 @@ const useRooms = (orderByUpdatedAt) => {
+                 .where('userIds', 'array-contains', firebaseUser.uid);
+         return collection.onSnapshot(async (query) => {
+             const newRooms = await (0, utils_1.processRoomsQuery)({ firebaseUser, query });
++            console.log('=====newRooms=====>',newRooms);
+             setRooms(newRooms);
+         });
+     }, [firebaseUser, orderByUpdatedAt]);
+@@ -109,18 +110,37 @@ const useRooms = (orderByUpdatedAt) => {
+         }
+         const currentUser = await (0, utils_1.fetchUser)(firebaseUser.uid);
+         const users = [currentUser].concat(otherUser);
+-        const room = await (0, firestore_1.default)()
+-            .collection(_1.ROOMS_COLLECTION_NAME)
+-            .add({
++        const roomData = {
+             createdAt: firestore_1.default.FieldValue.serverTimestamp(),
+-            imageUrl: undefined,
+-            metadata,
+-            name: undefined,
+-            type: 'direct',
+             updatedAt: firestore_1.default.FieldValue.serverTimestamp(),
++            type: 'direct',
+             userIds: users.map((u) => u.id),
+-            userRoles: undefined,
+-        });
++            lastMessage:'',
++            lastMessageTime:'',
++            count:0,
++            sender:''
++          };
++          if (metadata) {
++            roomData.metadata = metadata;
++          }
++        
++          // Create the room
++          const room = await (0, firestore_1.default)().collection(_1.ROOMS_COLLECTION_NAME).add(roomData);
++        
++        // const room = await (0, firestore_1.default)()
++        //     .collection(_1.ROOMS_COLLECTION_NAME)
++        //     .add({
++        //     createdAt: firestore_1.default.FieldValue.serverTimestamp(),
++        //     imageUrl: undefined,
++        //     metadata,
++        //     name: undefined,
++        //     type: 'direct',
++        //     updatedAt: firestore_1.default.FieldValue.serverTimestamp(),
++        //     userIds: users.map((u) => u.id),
++        //     userRoles: undefined,
++        //     lastMessage:'',
++        //     lastMessageTime:'',
++        // });
+         return {
+             id: room.id,
+             metadata,
+diff --git a/node_modules/@flyerhq/react-native-firebase-chat-core/lib/utils.js b/node_modules/@flyerhq/react-native-firebase-chat-core/lib/utils.js
+index dc86364..1763a47 100644
+--- a/node_modules/@flyerhq/react-native-firebase-chat-core/lib/utils.js
++++ b/node_modules/@flyerhq/react-native-firebase-chat-core/lib/utils.js
+@@ -16,7 +16,7 @@ const setConfig = (config) => {
+ exports.setConfig = setConfig;
+ /** Creates {@link User} in Firebase to store name and avatar used on rooms list */
+ const createUserInFirestore = async (user) => {
+-    await (0, firestore_1.default)().collection(exports.USERS_COLLECTION_NAME).doc(user.id).set({
++    const dataToSet = {
+         createdAt: firestore_1.default.FieldValue.serverTimestamp(),
+         firstName: user.firstName,
+         imageUrl: user.imageUrl,
+@@ -25,7 +25,30 @@ const createUserInFirestore = async (user) => {
+         metadata: user.metadata,
+         role: user.role,
+         updatedAt: firestore_1.default.FieldValue.serverTimestamp(),
+-    });
++      };
++    
++      // Remove fields with undefined values
++      for (const key in dataToSet) {
++        if (dataToSet.hasOwnProperty(key) && dataToSet[key] === undefined) {
++          delete dataToSet[key];
++        }
++      }
++    
++      await (0, firestore_1.default)()
++        .collection(exports.USERS_COLLECTION_NAME)
++        .doc(user.id)
++        .set(dataToSet);
++  // console.log('===userrr==>',user)
++  // await (0, firestore_1.default)().collection(exports.USERS_COLLECTION_NAME).doc(user.id).set({
++  //     createdAt: firestore_1.default.FieldValue.serverTimestamp(),
++  //     firstName: user.firstName,
++  //     imageUrl: user.imageUrl,
++  //     lastName: user.lastName,
++  //     lastSeen: user.lastSeen,
++  //     metadata: user.metadata,
++  //     role: user.role,
++  //     updatedAt: firestore_1.default.FieldValue.serverTimestamp(),
++  // });
+ };
+ exports.createUserInFirestore = createUserInFirestore;
+ /** Removes {@link User} from `users` collection in Firebase */
+@@ -80,6 +103,10 @@ const processRoomDocument = async ({ doc, firebaseUser, }) => {
+     const updatedAt = data.updatedAt?.toMillis() ?? undefined;
+     // type-coverage:ignore-next-line
+     let imageUrl = data.imageUrl ?? undefined;
++    let lastMessage = data?.lastMessage
++    let lastMessageTime = data?.lastMessageTime
++    let count = data?.count
++    let sender = data?.sender
+     let lastMessages;
+     // type-coverage:ignore-next-line
+     let name = data.name ?? undefined;
+@@ -132,6 +159,10 @@ const processRoomDocument = async ({ doc, firebaseUser, }) => {
+         type,
+         updatedAt,
+         users,
++        lastMessage,
++        lastMessageTime,
++        count,
++        sender
+     };
+     return room;
+ };
